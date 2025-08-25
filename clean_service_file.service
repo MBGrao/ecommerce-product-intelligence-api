@@ -1,0 +1,27 @@
+[Unit]
+Description=Product Analyzer FastAPI Service
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/product-analyzer
+Environment=PATH=/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
+Environment=USE_PLAYWRIGHT=true
+Environment=API_KEY=141a5767277ca1239014ee5a9763e46c19485a274dfd7b788f6366e8838ad2d8
+Environment=GOOGLE_API_KEY=AIzaSyBQJQJQJQJQJQJQJQJQJQJQJQJQJQJQJQ
+Environment=YER_PER_USD=250.0
+Environment=STRICT_PARTIAL_FROM_SCRAPE=true
+Environment=REQUEST_HARD_TIMEOUT_MS=30000
+Environment=PARTIAL_TIMEOUT_MS=15000
+Environment=QUICK_SCRAPE_TIMEOUT_MS=10000
+Environment=ALLOWED_SCRAPING_DOMAINS=aliexpress.com,amazon.com,noon.com,souq.com
+Environment=USE_GOOGLE_SHOPPING=true
+Environment=MAX_IMAGE_BYTES=10485760
+Environment=QUICK_HTML_MAX_BYTES=1048576
+ExecStart=/opt/product-analyzer/.venv/bin/python -m uvicorn product_analyzer:app --host 0.0.0.0 --port 8000
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
