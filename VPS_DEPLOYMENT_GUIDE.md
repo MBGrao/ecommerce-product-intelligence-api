@@ -1,6 +1,6 @@
 # 🚀 VPS Deployment Guide for Product Intelligence API
 
-Complete step-by-step guide to deploy the Product Intelligence API on your VPS (168.231.66.116).
+Complete step-by-step guide to deploy the Product Intelligence API on your VPS. Replace `<your-vps-ip>` with your server's IP address throughout this guide.
 
 ## 📋 Prerequisites
 
@@ -12,7 +12,7 @@ Complete step-by-step guide to deploy the Product Intelligence API on your VPS (
 
 ### SSH to your VPS
 ```bash
-ssh root@168.231.66.116
+ssh root@<your-vps-ip>
 ```
 
 ### Update system packages
@@ -75,29 +75,33 @@ playwright --version
 ## ⚙️ Step 4: Environment Configuration
 
 ### Create environment file
+
+Copy the template and fill in your own values:
+
 ```bash
-cat > /opt/product-analyzer/.env << 'EOF'
-API_KEY=141a5767277ca1239014ee5a9763e46c19485a274dfd7b788f6366e8838ad2d8
-GOOGLE_API_KEY=AIzaSyBQJQJQJQJQJQJQJQJQJQJQJQJQJQJQJQ
-USE_PLAYWRIGHT=true
-YER_PER_USD=250.0
-STRICT_PARTIAL_FROM_SCRAPE=true
-REQUEST_HARD_TIMEOUT_MS=30000
-PARTIAL_TIMEOUT_MS=15000
-QUICK_SCRAPE_TIMEOUT_MS=10000
-ALLOWED_SCRAPING_DOMAINS=aliexpress.com,amazon.com,noon.com,souq.com
-USE_GOOGLE_SHOPPING=true
-MAX_IMAGE_BYTES=10485760
-QUICK_HTML_MAX_BYTES=1048576
-EOF
+cp .env.example /opt/product-analyzer/.env
+
+# Generate a strong API key
+openssl rand -hex 32
 ```
+
+Edit `/opt/product-analyzer/.env` and set:
+
+- `API_KEY` — the value you just generated (clients send it as the `X-API-Key` header)
+- `GOOGLE_API_KEY` — your Google Cloud Vision API key
+
+> ⚠️ Never commit the `.env` file or paste real keys into documentation.
+> If a key is ever exposed, rotate it immediately.
 
 ## 🚀 Step 5: Systemd Service Setup
 
 ### Copy service file
 ```bash
-cp product-analyzer.service /etc/systemd/system/
+cp clean_service_file.service /etc/systemd/system/product-analyzer.service
 ```
+
+The service loads its configuration from `/opt/product-analyzer/.env`
+(created in Step 4) via `EnvironmentFile`.
 
 ### Reload systemd
 ```bash
@@ -127,7 +131,7 @@ systemctl start docker
 ### Create Caddyfile
 ```bash
 cat > /tmp/Caddyfile << 'EOF'
-api.168.231.66.116.sslip.io {
+api.<your-vps-ip>.sslip.io {
     reverse_proxy 172.17.0.1:8000
 }
 EOF
@@ -150,13 +154,13 @@ curl -s http://localhost:8000/health
 
 ### Test through reverse proxy
 ```bash
-curl -s https://api.168.231.66.116.sslip.io/health
+curl -s https://api.<your-vps-ip>.sslip.io/health
 ```
 
 ### Test AliExpress scraping
 ```bash
-curl -X POST "https://api.168.231.66.116.sslip.io/analyze/full" \
-  -H "X-API-Key: 141a5767277ca1239014ee5a9763e46c19485a274dfd7b788f6366e8838ad2d8" \
+curl -X POST "https://api.<your-vps-ip>.sslip.io/analyze/full" \
+  -H "X-API-Key: <your-api-key>" \
   -H "Content-Type: application/json" \
   -d '{"image_url":"https://httpbin.org/image/png","url":"https://ar.aliexpress.com/item/1005006158280083.html","language":"ar"}'
 ```
@@ -267,7 +271,7 @@ du -sh /opt/product-analyzer
 ### Monitor API performance
 ```bash
 # Test response time
-time curl -s "https://api.168.231.66.116.sslip.io/health"
+time curl -s "https://api.<your-vps-ip>.sslip.io/health"
 ```
 
 ## 🔐 Security Considerations
@@ -313,4 +317,4 @@ If you encounter issues:
 
 Your Product Intelligence API is now running at:
 - **Local**: http://localhost:8000
-- **Public**: https://api.168.231.66.116.sslip.io
+- **Public**: https://api.<your-vps-ip>.sslip.io

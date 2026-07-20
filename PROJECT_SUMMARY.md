@@ -14,7 +14,7 @@ This project represents a comprehensive AI-powered product analysis system that 
 - **Multi-language Support**: Full Arabic and English language support with proper RTL handling
 
 ### 2. **Production Deployment** ✅
-- **VPS Setup**: Successfully deployed on AlmaLinux 8 VPS (168.231.66.116)
+- **VPS Setup**: Successfully deployed on AlmaLinux 8 VPS
 - **Systemd Service**: Configured as a production systemd service with auto-restart
 - **Environment Management**: Proper environment variable configuration for production
 - **Reverse Proxy**: Configured Caddy reverse proxy for SSL termination and routing
@@ -52,7 +52,7 @@ This project represents a comprehensive AI-powered product analysis system that 
 ## 🚀 Deployment Status
 
 ### **Current Status**: ✅ **PRODUCTION READY**
-- **API Endpoint**: `https://api.168.231.66.116.sslip.io`
+- **API Endpoint**: `https://api.<your-vps-ip>.sslip.io`
 - **Health Check**: ✅ Working (`/health` returns status: "ok")
 - **Playwright**: ✅ Enabled and running
 - **Service**: ✅ Active and monitored
@@ -253,7 +253,7 @@ For technical support or questions:
 **Project Status**: ✅ **PRODUCTION READY**  
 **Last Updated**: August 25, 2025  
 **Version**: 2.3.0  
-**Deployment**: VPS (168.231.66.116)  
+**Deployment**: VPS  
 **Repository**: https://github.com/MBGrao/ecommerce-product-intelligence-api.git
 
 ---
