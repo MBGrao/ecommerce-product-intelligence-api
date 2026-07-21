@@ -163,7 +163,7 @@ curl -X POST "https://your-api-domain/analyze/full" \
 
 ## 🚀 Deployment History
 
-### VPS Setup (168.231.66.116)
+### VPS Setup
 - **OS**: AlmaLinux 8
 - **Python**: 3.11
 - **Node.js**: 18.20.8
