@@ -1,5 +1,8 @@
 # 🚀 E-commerce Product Intelligence API
 
+[![CI](https://github.com/MBGrao/ecommerce-product-intelligence-api/actions/workflows/ci.yml/badge.svg)](https://github.com/MBGrao/ecommerce-product-intelligence-api/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 A comprehensive AI-powered product analysis system that combines Google Cloud Vision API with advanced web scraping capabilities for e-commerce platforms.
 
 ## ✨ Features
@@ -54,14 +57,26 @@ pip install -r requirements.txt
 # Install Playwright browsers
 playwright install chromium
 
-# Set environment variables
-export API_KEY="your-api-key"
-export GOOGLE_API_KEY="your-google-vision-api-key"
-export USE_PLAYWRIGHT=true
+# Configure environment (never commit the real .env)
+cp .env.example .env
+# then edit .env: set API_KEY (generate with: openssl rand -hex 32)
+# and GOOGLE_API_KEY (Google Cloud Vision)
 
 # Run the API
 python -m uvicorn product_analyzer:app --host 0.0.0.0 --port 8000
 ```
+
+### Running Tests
+
+The test suite needs no credentials, browsers, or network access:
+
+```bash
+pip install pytest
+pytest -q
+```
+
+Tests cover the SSRF guard, API-key authentication, and the parsing
+helpers, and run automatically in CI on every push and pull request.
 
 ### VPS Deployment
 
