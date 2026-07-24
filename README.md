@@ -143,6 +143,11 @@ ecommerce-product-intelligence-api/
 | `YER_PER_USD` | Yemeni Rial to USD exchange rate | `250.0` |
 | `STRICT_PARTIAL_FROM_SCRAPE` | Require scraping for partial results | `true` |
 | `REQUEST_HARD_TIMEOUT_MS` | Request timeout in milliseconds | `30000` |
+| `SUPABASE_PARTIAL_WEBHOOK` | Optional URL for async partial-result webhooks | unset |
+| `SUPABASE_FULL_WEBHOOK` | Optional URL for async full-result webhooks | unset |
+| `SUPABASE_API_KEY` | Optional API key sent with Supabase webhook requests | unset |
+
+When the Supabase webhook variables are set, `product_analyzer.py` can POST partial and full analysis results to those endpoints instead of only returning them over HTTP. Leave them commented out in `.env` if you are not using the async webhook flow.
 
 ### API Endpoints
 
