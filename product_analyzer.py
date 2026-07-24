@@ -61,6 +61,7 @@ import time
 import uuid
 import hashlib
 from collections import deque, defaultdict, OrderedDict
+from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 from datetime import datetime, timedelta
@@ -647,10 +648,37 @@ def log(request_id: str, level: int, msg: str, **kv):
     logger.log(level, msg, extra=extra)
 
 # ---------------------- FastAPI app -------------------
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # SCRAPER/CURRENCY/clients are defined later in the module; they are
+    # resolved at runtime when the server actually starts.
+    print("Starting Product Analyzer API…")  # Use print for startup to avoid logging format issues
+    await CURRENCY.ensure_fresh()
+    if USE_PLAYWRIGHT:
+        await SCRAPER.init()
+    print(f"Started. Playwright={'on' if USE_PLAYWRIGHT else 'off'}")
+    print(f"Effective USD→YER rate: {YER_PER_USD} (from env: {os.getenv('YER_PER_USD', 'default')})")
+    yield
+    print("Shutting down…")  # Use print for shutdown to avoid logging format issues
+    try:
+        await SCRAPER.shutdown()
+    except Exception:
+        pass
+    try:
+        await client.aclose()
+    except Exception:
+        pass
+    try:
+        await fast_client.aclose()
+    except Exception:
+        pass
+    print("Bye.")
+
 app = FastAPI(
     title="Product Vision + Scraper (Arabic JSON)",
     version="2.3.0",
     contact={"name": "Your Team"},
+    lifespan=lifespan,
 )
 
 # Add CORS middleware for browser compatibility
@@ -2837,33 +2865,6 @@ async def health():
         "cache_size": CACHE.size(),
         "playwright_enabled": USE_PLAYWRIGHT
     }
-
-# ---------------------- Startup/Shutdown --------------
-@app.on_event("startup")
-async def on_startup():
-    print("Starting Product Analyzer API…")  # Use print for startup to avoid logging format issues
-    await CURRENCY.ensure_fresh()
-    if USE_PLAYWRIGHT:
-        await SCRAPER.init()
-    print(f"Started. Playwright={'on' if USE_PLAYWRIGHT else 'off'}")
-    print(f"Effective USD→YER rate: {YER_PER_USD} (from env: {os.getenv('YER_PER_USD', 'default')})")
-
-@app.on_event("shutdown")
-async def on_shutdown():
-    print("Shutting down…")  # Use print for shutdown to avoid logging format issues
-    try:
-        await SCRAPER.shutdown()
-    except Exception:
-        pass
-    try:
-        await client.aclose()
-    except Exception:
-        pass
-    try:
-        await fast_client.aclose()   # <-- add this
-    except Exception:
-        pass
-    print("Bye.")
 
 # ---------------------- Enhanced Data Processing -----------------
 GENERIC_NAMES = {"personal care","packaging and labeling","black background","product","electronics","appliance"}
