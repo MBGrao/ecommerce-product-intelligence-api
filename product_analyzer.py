@@ -75,7 +75,7 @@ from fastapi import (
 )
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from PIL import Image, UnidentifiedImageError
 from google.cloud import vision
 
@@ -1720,10 +1720,10 @@ class AnalyzeInput(BaseModel):
     fast_only: bool = Field(False, description="If true, skip full enrichment")
     vision_json: Optional[Dict[str, Any]] = Field(None, description="Pre-processed Vision API JSON response")
 
-    class Config:
-        populate_by_name = True
-        extra = "allow"  # Avoid 422 on unexpected but harmless keys
-        json_schema_extra = {
+    model_config = ConfigDict(
+        populate_by_name=True,
+        extra="allow",  # Avoid 422 on unexpected but harmless keys
+        json_schema_extra={
             "example": {
                 "image_base64": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQ...",
                 "url": "https://www.amazon.com/product/123",
@@ -1731,19 +1731,21 @@ class AnalyzeInput(BaseModel):
                 "fast_only": False,
                 "vision_json": {"responses": [{"labelAnnotations": [{"description": "coffee machine"}]}]}
             }
-        }
+        },
+    )
 
 class CropInput(BaseModel):
     image_base64: str
     mode: str = Field("center", description="center | square")
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "image_base64": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQ...",
                 "mode": "center"
             }
-        }
+        },
+    )
 
 class PriceObject(BaseModel):
     amount: float
@@ -1757,9 +1759,9 @@ class PartialResponse(BaseModel):
     price: Optional[PriceObject] = Field(default=None, alias="السعر")
     features: List[str] = Field(default=[], alias="المزايا")
 
-    class Config:
-        populate_by_name = True
-        json_schema_extra = {
+    model_config = ConfigDict(
+        populate_by_name=True,
+        json_schema_extra={
             "example": {
                 "اسم_المنتج": "ماكينة قهوة إسبريسو",
                 "السعر_بالريال_اليمني": "125000.00",
@@ -1767,7 +1769,8 @@ class PartialResponse(BaseModel):
                 "السعر": {"amount": 499.99, "currency": "USD", "source": "jsonld_offers"},
                 "المزايا": ["مضخة ضغط 15 بار", "مطحنة مدمجة"]
             }
-        }
+        },
+    )
 
 class FullResponse(BaseModel):
     product_name: str = Field(alias="اسم_المنتج")
@@ -1783,9 +1786,9 @@ class FullResponse(BaseModel):
     categories: Dict[str, Any] = Field(alias="الفئات")
     features: List[str] = Field(default=[], alias="المزايا")
 
-    class Config:
-        populate_by_name = True
-        json_schema_extra = {
+    model_config = ConfigDict(
+        populate_by_name=True,
+        json_schema_extra={
             "example": {
                 "اسم_المنتج": "ماكينة قهوة إسبريسو احترافية",
                 "الوصف": "يقدم هذا المنتج المسمى «ماكينة قهوة إسبريسو احترافية» تجربة عملية تجمع بين الأداء والجودة...",
@@ -1818,7 +1821,8 @@ class FullResponse(BaseModel):
                 },
                 "المزايا": ["مضخة ضغط 15 بار", "مطحنة مدمجة", "تحكم بدرجة الحرارة"]
             }
-        }
+        },
+    )
 
 # ---------------------- Helpers ------------------------
 def b64_to_bytes(b64: str) -> bytes:
@@ -2828,7 +2832,7 @@ async def analyze_full(payload: AnalyzeInput, request: Request, bg: BackgroundTa
                 pass
 
             if SUPABASE_FULL_WEBHOOK:
-                bg.add_task(post_webhook, SUPABASE_FULL_WEBHOOK, out.dict(by_alias=True), rid)
+                bg.add_task(post_webhook, SUPABASE_FULL_WEBHOOK, out.model_dump(by_alias=True), rid)
 
             duration = (time.monotonic() - start_time) * 1000
             log(rid, logging.INFO, "full_done", total_ms=f"{duration:.0f}")
