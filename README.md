@@ -66,6 +66,32 @@ cp .env.example .env
 python -m uvicorn product_analyzer:app --host 0.0.0.0 --port 8000
 ```
 
+### Docker
+
+Build and run the API with its configuration supplied at runtime. The image does
+not contain a `.env` file or any secrets.
+
+```bash
+docker build -t ecommerce-product-intelligence-api .
+docker run --rm -p 8000:8000 --env-file .env ecommerce-product-intelligence-api
+```
+
+For Docker Compose, save the following as `docker-compose.yml` alongside the
+repository:
+
+```yaml
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+```
+
+Then start the API with `docker compose up --build` and verify it with
+`curl http://localhost:8000/health`.
+
 ### Running Tests
 
 The test suite needs no credentials, browsers, or network access:
@@ -279,4 +305,4 @@ For support and questions:
 
 **Last Updated**: August 25, 2025  
 **Version**: 2.3.0  
-**Status**: Production Ready ✅ 
+**Status**: Production Ready ✅
