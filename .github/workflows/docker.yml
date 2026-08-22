@@ -1,0 +1,44 @@
+name: Docker
+
+on:
+  pull_request:
+    paths:
+      - Dockerfile
+      - .dockerignore
+      - requirements.txt
+      - product_analyzer.py
+      - .github/workflows/docker.yml
+  push:
+    branches: [master]
+    paths:
+      - Dockerfile
+      - .dockerignore
+      - requirements.txt
+      - product_analyzer.py
+      - .github/workflows/docker.yml
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build -t product-intelligence-api:ci .
+
+      - name: Smoke test container
+        run: |
+          docker run -d --name smoke -p 8000:8000 \
+            -e API_KEY=ci-smoke-key product-intelligence-api:ci
+          # Chromium startup takes a while on first boot
+          for i in $(seq 1 24); do
+            sleep 5
+            if curl -sf http://localhost:8000/health > /dev/null; then
+              break
+            fi
+          done
+          curl -sf http://localhost:8000/health
+          echo
+          test "$(curl -s -o /dev/null -w '%{http_code}' -X POST \
+            http://localhost:8000/crop -H 'X-API-Key: wrong')" = "401"
+          docker rm -f smoke
