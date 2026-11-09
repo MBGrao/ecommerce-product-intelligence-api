@@ -1,4 +1,9 @@
 """Pure parsing/cleaning helpers."""
+import warnings
+from pathlib import Path
+
+import pytest
+
 import product_analyzer as pa
 
 
@@ -109,6 +114,31 @@ def test_extract_price_arabic_dirham():
         "amount": 45.0,
         "currency": "AED",
     }
+
+
+@pytest.mark.parametrize(
+    "text, currency",
+    [
+        ("السعر 120 ر.ي", "YER"),
+        ("السعر 120 ر.س", "SAR"),
+        ("السعر 120 د.إ", "AED"),
+        ("السعر 120 د.ك", "KWD"),
+        ("السعر 120 ر.ق", "QAR"),
+        ("السعر 120 ر.ع", "OMR"),
+        ("السعر 120 د.ب", "BHD"),
+    ],
+)
+def test_extract_price_arabic_currency_abbreviations(text, currency):
+    assert pa.extract_price_from_text(text) == {"amount": 120.0, "currency": currency}
+
+
+def test_module_has_no_invalid_escape_sequences():
+    # Python 3.12+ reports these as SyntaxWarning and plans to make them
+    # errors; with warnings promoted, compiling surfaces any as SyntaxError.
+    source = Path(pa.__file__).read_text(encoding="utf-8")
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        compile(source, pa.__file__, "exec")
 
 
 def test_extract_price_absent():

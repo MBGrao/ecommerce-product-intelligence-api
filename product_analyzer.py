@@ -2938,19 +2938,19 @@ def extract_price_from_text(text: str) -> Optional[Dict[str, Any]]:
                     currency = 'USD'
                 elif 'EUR' in pattern or 'يورو' in pattern or '€' in pattern:
                     currency = 'EUR'
-                elif 'YER' in pattern or 'ر\.ي' in pattern or 'يمني' in pattern:
+                elif 'YER' in pattern or r'ر\.ي' in pattern or 'يمني' in pattern:
                     currency = 'YER'
-                elif 'SAR' in pattern or 'ر\.س' in pattern or 'سعودي' in pattern:
+                elif 'SAR' in pattern or r'ر\.س' in pattern or 'سعودي' in pattern:
                     currency = 'SAR'
-                elif 'AED' in pattern or 'د\.إ' in pattern or 'درهم' in pattern:
+                elif 'AED' in pattern or r'د\.إ' in pattern or 'درهم' in pattern:
                     currency = 'AED'
-                elif 'KWD' in pattern or 'د\.ك' in pattern or 'كويتي' in pattern:
+                elif 'KWD' in pattern or r'د\.ك' in pattern or 'كويتي' in pattern:
                     currency = 'KWD'
-                elif 'QAR' in pattern or 'ر\.ق' in pattern or 'قطري' in pattern:
+                elif 'QAR' in pattern or r'ر\.ق' in pattern or 'قطري' in pattern:
                     currency = 'QAR'
-                elif 'OMR' in pattern or 'ر\.ع' in pattern or 'عماني' in pattern:
+                elif 'OMR' in pattern or r'ر\.ع' in pattern or 'عماني' in pattern:
                     currency = 'OMR'
-                elif 'BHD' in pattern or 'د\.ب' in pattern or 'بحريني' in pattern:
+                elif 'BHD' in pattern or r'د\.ب' in pattern or 'بحريني' in pattern:
                     currency = 'BHD'
                 else:
                     currency = 'USD'
