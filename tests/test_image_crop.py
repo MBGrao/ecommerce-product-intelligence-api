@@ -1,6 +1,8 @@
 """Server-side center crop: the only code path that decodes images with Pillow."""
 import base64
 import io
+import struct
+import zlib
 
 import pytest
 from fastapi import HTTPException
@@ -30,6 +32,22 @@ def _striped_png(width: int, height: int) -> bytes:
     buf = io.BytesIO()
     im.save(buf, format="PNG")
     return buf.getvalue()
+
+
+def _png_header_only(width: int, height: int) -> bytes:
+    # Valid signature and IHDR declaring width x height, but no pixel data.
+    # Size checks run on the declared header, so nothing large is allocated.
+    def chunk(tag: bytes, data: bytes) -> bytes:
+        crc = zlib.crc32(tag + data) & 0xFFFFFFFF
+        return struct.pack(">I", len(data)) + tag + data + struct.pack(">I", crc)
+
+    ihdr = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
+    return (
+        b"\x89PNG\r\n\x1a\n"
+        + chunk(b"IHDR", ihdr)
+        + chunk(b"IDAT", zlib.compress(b""))
+        + chunk(b"IEND", b"")
+    )
 
 
 def _decode(jpeg_bytes: bytes) -> Image.Image:
@@ -72,6 +90,37 @@ def test_center_crop_rejects_non_image_bytes():
     assert exc.value.status_code == 400
 
 
+def test_center_crop_rejects_decompression_bomb():
+    # 144M pixels: over 2x MAX_IMAGE_PIXELS, so Pillow raises at open().
+    with pytest.raises(HTTPException) as exc:
+        pa.image_center_crop(_png_header_only(12_000, 12_000))
+    assert exc.value.status_code == 413
+
+
+@pytest.mark.filterwarnings("ignore::PIL.Image.DecompressionBombWarning")
+def test_center_crop_enforces_pixel_limit_below_pillow_error_threshold():
+    # 81M pixels: over the 64M limit but under Pillow's 2x error threshold,
+    # where Pillow alone would only warn and go on to decode.
+    with pytest.raises(HTTPException) as exc:
+        pa.image_center_crop(_png_header_only(9_000, 9_000))
+    assert exc.value.status_code == 413
+
+
+def test_center_crop_rejects_truncated_jpeg():
+    buf = io.BytesIO()
+    Image.new("RGB", (64, 64), RED).save(buf, format="JPEG")
+    jpeg = buf.getvalue()
+    with pytest.raises(HTTPException) as exc:
+        pa.image_center_crop(jpeg[: len(jpeg) // 2])
+    assert exc.value.status_code == 400
+
+
+def test_center_crop_rejects_header_without_pixel_data():
+    with pytest.raises(HTTPException) as exc:
+        pa.image_center_crop(_png_header_only(64, 64))
+    assert exc.value.status_code == 400
+
+
 def test_crop_endpoint_disabled_by_default():
     r = client.post("/crop", json={"image_base64": "AAAA"}, headers=VALID_KEY)
     assert r.status_code == 403
@@ -92,3 +141,10 @@ def test_crop_endpoint_rejects_unknown_mode(monkeypatch):
     payload = base64.b64encode(_striped_png(30, 30)).decode()
     r = client.post("/crop", json={"image_base64": payload, "mode": "circle"}, headers=VALID_KEY)
     assert r.status_code == 400
+
+
+def test_crop_endpoint_returns_413_for_decompression_bomb(monkeypatch):
+    monkeypatch.setattr(pa, "ENABLE_SERVER_CROP", True)
+    payload = base64.b64encode(_png_header_only(12_000, 12_000)).decode()
+    r = client.post("/crop", json={"image_base64": payload}, headers=VALID_KEY)
+    assert r.status_code == 413

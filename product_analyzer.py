@@ -1851,7 +1851,12 @@ async def download_bytes(url: str, hard_limit: int = MAX_IMAGE_BYTES) -> bytes:
 def image_center_crop(img_bytes: bytes) -> bytes:
     try:
         Image.MAX_IMAGE_PIXELS = 64_000_000  # safety
-        im = Image.open(io.BytesIO(img_bytes)).convert("RGB")
+        im = Image.open(io.BytesIO(img_bytes))
+        # open() only parses the header. Pillow itself raises only above
+        # 2x MAX_IMAGE_PIXELS, so enforce the limit before decoding.
+        if im.width * im.height > Image.MAX_IMAGE_PIXELS:
+            raise HTTPException(413, detail="Image dimensions too large")
+        im = im.convert("RGB")
         w, h = im.size
         side = min(w, h)
         left = (w - side) // 2
@@ -1862,6 +1867,11 @@ def image_center_crop(img_bytes: bytes) -> bytes:
         return out.getvalue()
     except UnidentifiedImageError:
         raise HTTPException(400, detail="Unsupported image format")
+    except Image.DecompressionBombError:
+        raise HTTPException(413, detail="Image dimensions too large")
+    except OSError:
+        # Truncated or corrupt pixel data surfaces when convert() decodes.
+        raise HTTPException(400, detail="Corrupt or truncated image")
 
 def normalize_images(urls: List[str]) -> List[str]:
     """Normalize image URLs and filter out invalid ones."""
